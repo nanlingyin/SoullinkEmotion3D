@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f6fb" />
+    <meta name="description" content="将连续 VAD 情绪、FACS 动作单元与自然衰减映射到二次元 3D 角色的面部。" />
+    <title>Soullink Face Lab · 让情绪有形</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%237961b4'/%3E%3Cpath d='M10 24c2 7 18 7 20-4M12 15h1m14 0h1' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="#"><span class="brand-mark">s<span>·</span></span><span>soullink<span class="brand-sub">FACE LAB</span></span></a>
+        <nav aria-label="主导航"><span class="nav-active">表情实验室</span><button id="guide-button" class="text-button">接入说明 <span>↗</span></button></nav>
+        <div class="header-actions"><span class="version">v0.2 · EXPERIMENTAL</span><button class="button small" id="model-library">公模库 · 4</button><button class="button small" id="import-model">＋ 导入 VRM</button></div>
+      </header>
+      <main class="workspace">
+        <section class="stage-panel" aria-label="角色预览">
+          <div class="stage-heading"><div class="eyebrow">EMOTION IN MOTION</div><h1>让情绪，有形。</h1><p>从一个情绪坐标，到一次细微的表情。</p></div>
+          <div class="stage-grid" aria-hidden="true"></div><div class="stage-halo" aria-hidden="true"></div>
+          <div id="viewer" class="viewer"></div>
+          <div class="stage-label"><span class="status-dot"></span><span id="model-name">AvatarSample_B</span><span class="pill">VRM 1.0</span></div>
+          <div class="stage-stats"><span><b id="fps">—</b> FPS</span><span><b id="morph-count">—</b> MORPHS</span></div>
+          <div id="loading" class="loading"><span class="loading-spinner"></span><strong>正在准备角色</strong><span id="loading-text">加载本地公模资源…</span><button id="reload-model" class="text-button" hidden>重新加载</button></div>
+          <div class="view-switch" role="group" aria-label="视图"><button data-view="face" class="active">面部</button><button data-view="bust">半身</button><button data-view="full">全身</button></div>
+          <div class="stage-side-actions"><button id="screenshot" title="保存透明背景截图" aria-label="保存截图">▣</button><button id="wireframe" title="查看网格" aria-label="切换网格" aria-pressed="false">◇</button><button id="reset-camera" title="重置视角" aria-label="重置视角">↺</button></div>
+          <div class="stage-caption"><span>拖动旋转 · 滚轮缩放</span><span>pixiv / VRoid Project</span></div>
+          <div class="state-card"><div class="state-card-top"><span class="eyebrow">LIVE STATE</span><span id="phase-label" class="phase">就绪</span></div><div class="live-emotion"><span id="emotion-icon">◌</span><strong id="emotion-label">平静中性</strong><span id="intensity-value">0%</span></div><div class="state-values"><span>V <b id="v-live">+0.00</b></span><span>A <b id="a-live">+0.00</b></span><span>D <b id="d-live">+0.00</b></span></div><div class="state-progress"><div id="intensity-bar"></div></div></div>
+        </section>
+        <aside class="controls-panel">
+          <div class="panel-title"><div><span class="eyebrow">CONTROL ROOM</span><h2>情绪控制台</h2></div><button id="reset-all" class="text-button">↺ 重置</button></div>
+          <div class="tabs" role="tablist" aria-label="参数分组"><button id="tab-emotion" role="tab" data-tab="emotion" aria-selected="true" class="active">情绪 & VAD</button><button id="tab-facs" role="tab" data-tab="facs" aria-selected="false">FACS / AU</button><button id="tab-model" role="tab" data-tab="model" aria-selected="false">模型映射</button></div>
+          <div id="pane-emotion" class="pane" role="tabpanel" aria-labelledby="tab-emotion">
+            <div class="section-label"><h3>情绪脉冲</h3><span>24 种状态 · 含中性</span></div>
+            <div class="emotion-filters" aria-label="情绪分类"><button data-emotion-group="common" class="active">常用</button><button data-emotion-group="positive">积极</button><button data-emotion-group="connection">亲近</button><button data-emotion-group="low">低能</button><button data-emotion-group="pressure">压力</button><button data-emotion-group="all">全部</button></div>
+            <div class="preset-grid" id="presets"></div>
+            <p class="subtle-note emotion-description" id="emotion-description">选择情绪，观察眉、眼、嘴如何一起变化。</p>
+            <div class="control-row compact"><label for="pulse-strength">触发强度</label><output id="pulse-strength-value">100%</output><input id="pulse-strength" type="range" min="0" max="1" value="1" step="0.01" /></div>
+            <div class="section-label space-top"><h3>三维情绪坐标</h3><button id="center-vad" class="text-button mini">归零</button></div>
+            <div class="coordinate-tabs" role="group" aria-label="坐标视图"><button data-coordinates="3d" class="active" aria-pressed="true">三维 VAD</button><button data-coordinates="va">V–A</button><button data-coordinates="vd">V–D</button><button data-coordinates="ad">A–D</button></div>
+            <div class="space-container"><canvas id="vad-space" tabindex="0" aria-label="三维 VAD 情绪空间"></canvas><div class="vad-field" id="vad-field" tabindex="0" role="slider" hidden aria-label="情绪二维投影" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0"><div class="field-axis horizontal"></div><div class="field-axis vertical"></div><span class="field-label top">唤醒 ↑</span><span class="field-label bottom">↓ 舒缓</span><span class="field-label left">负向</span><span class="field-label right">愉悦</span><span class="quadrant q1">紧张</span><span class="quadrant q2">兴奋</span><span class="quadrant q3">低落</span><span class="quadrant q4">安心</span><div id="vad-target" class="vad-target" title="目标"></div><div id="vad-current" class="vad-current" title="当前"></div></div></div>
+            <div class="field-key"><span><i class="current-dot"></i> 当前状态</span><span><i class="target-dot"></i> 目标状态</span></div>
+            <div class="dominance-status" id="dominance-status">D +0.00 · 相对中性</div><p id="coordinate-note" class="subtle-note coordinate-note">三轴同时可见；拖动旋转，用下方滑块精确编辑。</p>
+            <div id="vad-sliders"></div>
+            <div class="blend-panel"><span class="eyebrow">VAD 邻域混合 · 动画权重</span><div id="blend-values">平静基线</div><div class="region-trace"><span>眉</span><div><i id="region-brow"></i></div><span>眼</span><div><i id="region-eyes"></i></div><span>嘴</span><div><i id="region-mouth"></i></div></div></div>
+            <div class="section-label space-top"><h3>表情细节</h3><span>三轴连续插值</span></div>
+            <div class="control-row"><label for="detail-mix">风格细节占比</label><output id="detail-mix-value">65%</output><input id="detail-mix" type="range" min="0" max="1" step="0.01" value="0.65" /></div><div class="region-controls"><div class="control-row"><label for="brow-gain">眉部</label><output id="brow-gain-value">1.0×</output><input id="brow-gain" type="range" min="0" max="2" step="0.1" value="1" /></div><div class="control-row"><label for="eye-gain">眼部</label><output id="eye-gain-value">1.0×</output><input id="eye-gain" type="range" min="0" max="2" step="0.1" value="1" /></div><div class="control-row"><label for="mouth-gain">嘴部</label><output id="mouth-gain-value">1.0×</output><input id="mouth-gain" type="range" min="0" max="2" step="0.1" value="1" /></div></div>
+            <div class="section-label space-top"><h3>时间与衰减</h3><span class="tag">Soullink Engine</span></div>
+            <div class="dual-controls"><div class="control-row"><label for="hold">追加保持</label><output id="hold-value">8 s</output><input id="hold" type="range" min="0" max="30" step="1" value="8" /></div><div class="control-row"><label for="half-life">衰减半衰期</label><output id="half-life-value">8 s</output><input id="half-life" type="range" min="2" max="60" step="1" value="8" /></div></div>
+            <p class="subtle-note">脉冲保持 6 + 强度 × 追加保持 秒，再指数回落。半衰期描述目标 VAD 到基线的距离。</p>
+            <div class="control-row"><label for="gain">表情表现强度</label><output id="gain-value">1.4×</output><input id="gain" type="range" min="0.5" max="4" step="0.1" value="1.4" /></div>
+            <div class="toggle-row"><label class="toggle"><input id="auto-decay" type="checkbox" checked /><span></span>自动回落</label><label class="toggle"><input id="auto-blink" type="checkbox" checked /><span></span>自然眨眼</label><label class="toggle"><input id="idle" type="checkbox" checked /><span></span>细微动作</label></div>
+          </div>
+          <div id="pane-facs" class="pane" role="tabpanel" aria-labelledby="tab-facs" hidden><div class="section-label"><h3>动作单元</h3><button id="clear-aus" class="text-button mini">释放全部</button></div><p class="subtle-note">滑动后锁定该 AU。点击锁定点释放，回归 VAD 情绪层。灰色通道在当前模型中没有映射。</p><div id="au-controls"></div><div class="section-label space-top"><h3>视线与头部</h3></div><div id="pose-controls"></div><div class="action-row"><button class="button" data-action="nod">点点头</button><button class="button" data-action="shake">摇摇头</button><button class="button" data-action="blink">眨一下眼</button></div></div>
+          <div id="pane-model" class="pane" role="tabpanel" aria-labelledby="tab-model" hidden><div class="model-info-card"><span class="eyebrow">CURRENT MODEL</span><h3 id="model-info-name">AvatarSample_B</h3><p id="model-info-text">正在读取模型能力…</p><span class="tag" id="model-coverage">— / 20 AU</span></div><div class="integration-card"><span class="eyebrow">FACS ADAPTER · ICT-FACEKIT</span><h3>标准接口，按模型能力落地。</h3><p>官方 AU 对照作为基准，ARKit 52 作为交换通道；支持标准 FACS 参数与 MediaPipe 结果导入。VRoid 使用近似形变代理，不能自动补全缺失肌肉形变。</p><div class="integration-stats"><span id="direct-coverage">0 / 52 直接通道</span><span id="active-signals">0 / 52 通道活跃</span></div><p id="signal-source">Soullink VAD 情绪驱动</p><div class="model-buttons"><button id="export-signals" class="button">导出 ARKit 52</button><button id="import-signals" class="button">导入表情输入</button><button id="release-signals" class="button">释放输入</button></div><a href="https://github.com/USC-ICT/ICT-FaceKit#expression-shapes" target="_blank" rel="noreferrer">官方 FACS 对照 ↗</a></div><div class="section-label space-top"><h3>AU → BlendShape</h3><button id="export-profile" class="text-button mini">导出 JSON ↗</button></div><p class="subtle-note">VRoid 使用风格化表情代理，不能等同于完整的解剖学 FACS。鼻部、上唇与下巴通道缺失时不会伪造驱动。</p><div id="mapping-list"></div><div class="model-buttons"><button id="import-profile" class="button">导入映射 JSON</button><button id="default-profile" class="button">恢复默认映射</button><button id="download-morphs" class="button">导出形变清单</button></div><div class="credits"><strong>模型与源码</strong><p id="model-license">AvatarSample_B · VRoid 样例条款</p><a id="model-terms" href="https://vroid.pixiv.help/hc/en-us/articles/4402394424089" target="_blank" rel="noreferrer">当前公模使用条款 ↗</a><a href="https://github.com/nanlingyin/soullink-emotion-sdk" target="_blank" rel="noreferrer">参考 Soullink Emotion SDK ↗</a></div></div>
+        </aside>
+      </main>
+      <section class="timeline-panel"><div class="timeline-title"><span class="eyebrow">EMOTION TRACE</span><h3>情绪的余韵</h3><div class="chart-legend"><span><i class="v"></i> Valence</span><span><i class="a"></i> Arousal</span><span><i class="d"></i> Dominance</span></div></div><div class="timeline-chart"><canvas id="trace" aria-label="最近 30 秒 VAD 状态曲线"></canvas><span class="chart-end">当前</span></div><div class="timeline-controls"><button id="pause" class="icon-button" aria-label="暂停情绪时间">Ⅱ</button><select id="time-speed" aria-label="时间倍速"><option value="1">1× 时间</option><option value="2">2× 时间</option><option value="4">4× 时间</option></select><button id="export-state" class="text-button">导出状态 ↗</button></div></section>
+      <footer><span>SOULLINK FACE LAB <i>·</i> FACS × VAD × 3D</span><span>情绪状态 → AU → 模型映射 → 面部形变</span><a href="./downloads/soullink-face-lab.zip" download>下载完整项目 ↗</a></footer>
+    </div>
+    <input id="signals-file" type="file" accept=".json" hidden /><input id="model-file" type="file" accept=".vrm" hidden /><input id="profile-file" type="file" accept=".json" hidden />
+    <dialog id="models-dialog"><button id="close-models" class="dialog-close" aria-label="关闭公模库">×</button><span class="eyebrow">AVATAR COLLECTION</span><h2>让同一种情绪，有不同面孔。</h2><p>四款 VRoid 公模。切换时保留情绪状态，重新检测形变能力。</p><div id="model-catalog" class="model-catalog"></div><p class="subtle-note">原始模型与授权元数据保持完整。不同模型的 AU 覆盖率与表现幅度会有所区别。</p></dialog>
+    <dialog id="guide"><button class="dialog-close" id="close-guide" aria-label="关闭">×</button><span class="eyebrow">QUICK START</span><h2>从情绪，连接到你的角色。</h2><p>点击情绪脉冲，观察 VAD 追向目标、停留，再逐渐回到基线。三维视图同时呈现 V / A / D，拖动可旋转；V–A、V–D、A–D 投影可直接编辑两个坐标，同时保留第三轴。</p><ol><li><b>公模库</b>：四款角色可切换，保留当前情绪并检测模型的真实 AU 覆盖率。</li><li><b>FACS / AU</b>：单独锁定眉、眼、嘴的动作单元；释放后回到情绪驱动。</li><li><b>模型映射</b>：查看真实 Morph 名称与覆盖率，导出 JSON 后可修改候选名称、增益并导入。</li><li><b>导入 VRM</b>：支持 VRM 0.x / 1.0，本地读取，不上传模型。仅有标准表情的模型会进入预设降级模式。</li></ol><p>VAD 是 Valence / Arousal / Dominance（愉悦、唤醒、支配），范围均为 −1 到 1。动画权重用于表情插值；不是情绪识别概率。当前项目不需要摄像头、训练或 AI 服务。</p><pre><code>window.soullinkFace.triggerEmotion('happy', 0.9)
+window.soullinkFace.setVAD({ valence: 0.8 })
+window.soullinkFace.setAU('au12LipCornerPuller', 0.7)
+window.soullinkFace.setAU('au12LipCornerPuller', null)</code></pre><a class="button primary" href="./downloads/soullink-face-lab.zip" download>下载源码与公模</a></dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

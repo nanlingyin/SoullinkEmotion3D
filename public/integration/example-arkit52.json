@@ -1,0 +1,8 @@
+{
+  "protocol": "arkit52",
+  "blendshapes": {
+    "browInnerUp": 0.3,
+    "mouthSmileLeft": 0.6,
+    "eyeBlinkRight": 0.8
+  }
+}

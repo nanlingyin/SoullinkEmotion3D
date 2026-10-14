@@ -1,0 +1,12 @@
+{
+  "mapping": "ICT-FaceKit Expression Shapes closest correspondences",
+  "repository": "https://github.com/USC-ICT/ICT-FaceKit",
+  "reference": "https://github.com/USC-ICT/ICT-FaceKit#expression-shapes",
+  "license": "MIT",
+  "scope": "Published AU correspondences; no ICT head/PCA assets",
+  "approximateBridges": [
+    "AU23->mouthPress",
+    "AU25/26->jawOpen"
+  ],
+  "arkit": "https://developer.apple.com/documentation/arkit/arfaceanchor/blendshapelocation/"
+}

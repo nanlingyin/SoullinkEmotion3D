@@ -1,0 +1,29 @@
+{
+  "id": "Sendagaya_Shino",
+  "name": "千駄谷篠",
+  "subtitle": "长发 · 清雅",
+  "path": "./models/Sendagaya_Shino.vrm",
+  "thumbnail": "./models/Sendagaya_Shino.png",
+  "source": "https://raw.githubusercontent.com/madjin/vrm-samples/master/vroid/beta/Sendagaya_Shino.vrm",
+  "sha256": "1e177c1a7b14f783a9c48395831db8616260d3bddd4154cb2784b779adca49b5",
+  "bytes": 15074328,
+  "morphs": 41,
+  "license": "CC0",
+  "terms": "https://vroid.pixiv.help/hc/en-us/articles/360013482714-Sendagaya-Shino",
+  "format": "0.x",
+  "meta": {
+    "version": "",
+    "author": "",
+    "contactInformation": "",
+    "reference": "",
+    "title": "Sendagaya Shino",
+    "texture": 29,
+    "allowedUserName": "Everyone",
+    "violentUssageName": "Allow",
+    "sexualUssageName": "Allow",
+    "commercialUssageName": "Allow",
+    "otherPermissionUrl": "",
+    "licenseName": "CC0",
+    "otherLicenseUrl": ""
+  }
+}

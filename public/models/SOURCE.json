@@ -1,0 +1,25 @@
+{
+  "source": "https://github.com/pixiv/ChatVRM/blob/main/public/AvatarSample_B.vrm",
+  "sha256": "ffbd8c92a9e67c0a948f69c7a2eec91e5c282c9ae70e9184309fc164d74cbc27",
+  "meta": {
+    "name": "AvatarSample_B",
+    "version": "1.1",
+    "authors": [
+      "VRoid Project"
+    ],
+    "copyrightInformation": "pixiv Inc.",
+    "contactInformation": "https://www.pixiv.net/support.php?mode=select_vroid",
+    "thumbnailImage": 29,
+    "licenseUrl": "https://vrm.dev/licenses/1.0/",
+    "avatarPermission": "everyone",
+    "allowExcessivelyViolentUsage": true,
+    "allowExcessivelySexualUsage": true,
+    "commercialUsage": "corporation",
+    "allowPoliticalOrReligiousUsage": true,
+    "allowAntisocialOrHateUsage": false,
+    "creditNotation": "unnecessary",
+    "allowRedistribution": true,
+    "modification": "allowModificationRedistribution",
+    "otherLicenseUrl": "https://vroid.pixiv.help/hc/ja/articles/4402394424089-AvatarSample-A-B-C"
+  }
+}

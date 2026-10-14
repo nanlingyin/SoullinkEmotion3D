@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/nanlingyin/soullink-emotion-sdk",
+  "commit": "02cd75ac0a085a87d84d1a885f1b33eca8742d53",
+  "license": "Apache-2.0",
+  "files": [
+    "emotion/EmotionPresetRegistry.ts",
+    "emotion/EmotionStateController.ts",
+    "emotion/VADExpressionMapper.ts",
+    "emotion/VADState.ts",
+    "expression/ActionUnitSolver.ts",
+    "expression/EmotionArchetype.ts",
+    "expression/EmotionArchetypeRegistry.ts",
+    "facs/ActionUnitUtils.ts",
+    "facs/FACSActionUnitState.ts",
+    "facs/FACSLikeState.ts",
+    "facs/FACSUtils.ts",
+    "facs/defaultActionUnitState.ts",
+    "facs/defaultFACSState.ts",
+    "reaction/EmotionIntent.ts",
+    "utils/clamp.ts",
+    "utils/easing.ts",
+    "utils/lerp.ts",
+    "utils/randomRange.ts",
+    "utils/seededRandom.ts",
+    "utils/smoothing.ts"
+  ]
+}

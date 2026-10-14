@@ -1,0 +1,29 @@
+{
+  "id": "AvatarSample_C",
+  "name": "AvatarSample_C",
+  "subtitle": "黑发 · 沉稳",
+  "path": "./models/AvatarSample_C.vrm",
+  "thumbnail": "./models/AvatarSample_C.png",
+  "source": "https://raw.githubusercontent.com/madjin/vrm-samples/master/vroid/stable/AvatarSample_C.vrm",
+  "sha256": "395d5b04696e888f07bc856ae01bf72a974b7e773132c7443dc59d1688045b8a",
+  "bytes": 13132268,
+  "morphs": 54,
+  "license": "VRoid 样例条款",
+  "terms": "https://vroid.pixiv.help/hc/en-us/articles/4402394424089",
+  "format": "0.x",
+  "meta": {
+    "version": "",
+    "author": "VRoid",
+    "contactInformation": "",
+    "reference": "",
+    "title": "AvatarSample_C",
+    "texture": 24,
+    "allowedUserName": "Everyone",
+    "violentUssageName": "Allow",
+    "sexualUssageName": "Allow",
+    "commercialUssageName": "Allow",
+    "otherPermissionUrl": "",
+    "licenseName": "Other",
+    "otherLicenseUrl": ""
+  }
+}

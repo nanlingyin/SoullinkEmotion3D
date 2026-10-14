@@ -1,0 +1,18 @@
+Soullink Face Lab
+Copyright 2026 Yijun Feng and contributors.
+
+This project contains original, unmodified source modules from Soullink Emotion SDK.
+Copyright 2026 Soullink Emotion contributors.
+Repository: https://github.com/nanlingyin/soullink-emotion-sdk
+Commit: 02cd75ac0a085a87d84d1a885f1b33eca8742d53
+License: Apache License, Version 2.0. See vendor/soullink/LICENSE.
+
+Three.js and @pixiv/three-vrm are used under their MIT licenses.
+The VRM model is a separate licensed asset, not part of the software license.
+ICT-FaceKit published closest AU correspondences are used as a mapping reference.
+Copyright (c) 2020 USC Institute for Creative Technologies.
+MIT license: LICENSES/ICT-FaceKit.txt. No ICT PCA or head assets included.
+
+AvatarSample_A / B / C: © pixiv Inc. / VRoid Project; official sample terms.
+Sendagaya Shino: VRoid Project legacy sample, CC0.
+See public/models/LICENSE.md and public/models/SOURCE.json.

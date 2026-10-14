@@ -1,0 +1,26 @@
+{
+  "name": "soullink-face-lab",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 4173",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "predev": "node scripts/fetch-models.mjs",
+    "prebuild": "node scripts/fetch-models.mjs",
+    "pretest": "node scripts/fetch-models.mjs"
+  },
+  "dependencies": {
+    "three": "0.180.0",
+    "@pixiv/three-vrm": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.180.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0",
+    "tsx": "^4.20.0",
+    "@types/node": "^24.0.0"
+  }
+}
