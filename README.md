@@ -1,10 +1,20 @@
-# Soullink Face Lab v0.2
+# Soullink Emotion 3D
 
-将三维 VAD 情绪、FACS 动作单元、自然衰减和标准表情参数，映射到二次元 3D 角色面部的浏览器项目。
+在浏览器中把 VAD 情绪、FACS 动作单元和标准表情参数映射到 VRM 角色，实现连续、可调的 3D 面部表情。
 
-TypeScript + Three.js + three-vrm + Vite。无需训练、LLM 或服务端 API，需要 WebGL。部署时依赖与公模均由本地静态资源提供，不使用运行时 CDN。
+**TypeScript · Three.js · three-vrm · Vite** · 无需训练、LLM 或服务端 API；需要支持 WebGL 的浏览器。
 
-## 本地运行
+[演示](#演示) · [快速开始](#快速开始) · [功能](#功能) · [VRM 模型要求](#vrm-模型要求) · [模型与授权](#公模与授权)
+
+![24 种情绪状态展示](docs/media/emotion-gallery.png)
+
+## 演示
+
+<video src="https://raw.githubusercontent.com/nanlingyin/SoullinkEmotion3D/main/docs/media/QQ20261014-171445-HD.mp4" controls preload="metadata" width="100%"></video>
+
+[无法播放时，打开演示视频](docs/media/QQ20261014-171445-HD.mp4)
+
+## 快速开始
 
 需要 Node.js 20.19+ 或 22.12+。
 
@@ -13,7 +23,7 @@ npm ci
 npm run dev
 ```
 
-打开 http://localhost:4173/ 。Windows 可双击 start-windows.bat。
+打开 http://localhost:4173/。Windows 也可以双击 `start-windows.bat`。
 
 ```sh
 npm test
@@ -21,11 +31,15 @@ npm run build
 npm run preview
 ```
 
-完整压缩包包含四款模型。网页轻量源码包包含默认 AvatarSample_B，其余三个模型在 dev / test / build 前由 scripts/fetch-models.mjs 下载并校验 SHA-256。GitHub 无法访问时请使用含全部公模的完整压缩包。
+构建输出位于 `dist/`，可部署到静态服务器。请通过 HTTP 服务访问，不要用 `file://` 打开 HTML。
 
-构建输出为 dist/，可部署到静态服务器。请用 HTTP 服务打开，不要用 file:// 双击 HTML。
+## VRM 模型要求
 
-## 新功能
+**需要 VRM 角色模型才能显示和驱动面部。**可以使用内置公模，也可以在应用中导入自己的 `.vrm` 文件（支持 VRM 0.x 和 1.0）。普通图片、FBX 或 PMX 模型不能直接导入。
+
+完整压缩包包含四款模型。轻量源码包默认包含 AvatarSample_B，其余三个模型会在运行开发、测试或构建命令前由 `scripts/fetch-models.mjs` 下载并校验 SHA-256。GitHub 无法访问时，请使用含全部公模的完整压缩包。
+
+## 功能
 
 - 四款公模可切换；切换时保留情绪，并重新检测真实形变能力。
 - 24 种状态（含中性）：开心、兴奋、忍俊、得意、自信、安心、释然、温柔、害羞、窘迫、好奇、关切、困惑、疲惫、低落、落寞、失望、紧张、害怕、生气、烦躁、嫌弃、惊讶、中性。
