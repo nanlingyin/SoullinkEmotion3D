@@ -1,12 +1,15 @@
 {
   "name": "soullink-face-lab",
-  "version": "0.2.0",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 4173",
     "build": "tsc --noEmit && vite build",
     "test": "node --import tsx --test tests/*.test.ts",
+    "test:semantic:live": "node --import tsx scripts/test-semantic-live.ts",
+    "test:motion:live": "node --import tsx scripts/test-motion-live.ts",
+    "test:directions:live": "node --import tsx scripts/test-directions-live.ts",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "predev": "node scripts/fetch-models.mjs",
     "prebuild": "node scripts/fetch-models.mjs",

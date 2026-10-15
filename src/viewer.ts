@@ -6,9 +6,10 @@ import { computeMorphWeights, resolveProfile, vroidProfile, type ModelProfile, t
 import { clamp, type FrameState, type FACSActionUnitKey } from './engine';
 import { normalizeLegacyMorphNames, canonicalMorphName } from './model-utils';
 import { directShapeChannel } from './arkit';
+import { FaceRig, type RigCapabilities } from './face-rig';
 
 type MorphMesh = THREE.Mesh & { morphTargetDictionary: Record<string, number>; morphTargetInfluences: number[] };
-export interface ModelInfo { name: string; morphs: number; triangles: number; bindings: ResolvedBinding[]; fallback: boolean; meta: unknown;directChannels:number }
+export interface ModelInfo { name: string; morphs: number; triangles: number; bindings: ResolvedBinding[]; fallback: boolean; meta: unknown;directChannels:number; rig: RigCapabilities }
 
 export class FaceViewer {
   private renderer: THREE.WebGLRenderer;
@@ -17,6 +18,7 @@ export class FaceViewer {
   private controls: OrbitControls;
   private loader = new GLTFLoader();
   private vrm: VRM | null = null;
+  private rig: FaceRig | null = null;
   private morphs: MorphMesh[] = [];
   private baseline = new Map<MorphMesh, number[]>();
   private originalInfluences: Set<string> = new Set();
@@ -98,8 +100,9 @@ export class FaceViewer {
     if (headNode) headNode.getWorldPosition(this.head);
     else this.head.set(0, box.max.y - this.height * 0.1, 0);
     if (vrm.lookAt) vrm.lookAt.autoUpdate = false;
+    this.rig = new FaceRig(vrm);
     this.setWireframe(this.wireframe); this.frame(this.zoom);
-    this.info = { name: vrm.meta?.metaVersion === '1' ? vrm.meta.name : vrm.meta?.title ?? 'Imported VRM', morphs: names.size, triangles: Math.round(triangles), bindings: this.resolved, fallback: this.fallback, meta: vrm.meta,directChannels:new Set([...names].map(directShapeChannel).filter(Boolean)).size };
+    this.info = { name: vrm.meta?.metaVersion === '1' ? vrm.meta.name : vrm.meta?.title ?? 'Imported VRM', morphs: names.size, triangles: Math.round(triangles), bindings: this.resolved, fallback: this.fallback, meta: vrm.meta,directChannels:new Set([...names].map(directShapeChannel).filter(Boolean)).size, rig: this.rig.capabilities };
     return this.info;
   }
   setProfile(profile: ModelProfile) {
@@ -143,11 +146,9 @@ export class FaceViewer {
     if (this.frameTimer >= 0.5) { this.fps = Math.round(this.frames / this.frameTimer); this.frames = 0; this.frameTimer = 0; }
     if (this.vrm) {
       const vrm = this.vrm;
-      const head = vrm.humanoid.getNormalizedBoneNode('head');
       const chest = vrm.humanoid.getNormalizedBoneNode('chest');
-      if (head) head.rotation.set(-frame.pose.x * 0.25, frame.pose.y * 0.32, frame.pose.z * 0.21);
+      this.rig?.apply(frame.angles.head, frame.angles.eyes);
       if (chest) chest.rotation.x = Math.sin(frame.time * 1.4) * 0.007;
-      if (vrm.lookAt) { vrm.lookAt.yaw = frame.gaze.x * 45; vrm.lookAt.pitch = -frame.gaze.y * 35; }
       const manager = vrm.expressionManager;
       if (manager) for (const key of Object.keys(manager.expressionMap)) manager.setValue(key, 0);
       if (this.fallback && manager) {
@@ -160,7 +161,7 @@ export class FaceViewer {
       }
       // Let VRM update spring bones / normalized skeleton and clear preset morphs first.
       vrm.update(Math.min(Math.max(realDelta, 0), 0.05));
-      const weights = computeMorphWeights(frame.aus, this.resolved, this.gains);
+      const weights = computeMorphWeights(frame.aus, this.resolved, this.gains, { contrast: frame.source === 'emotion' ? Math.max(0, (frame.settings.gain - 1) / 3) * 1.5 : 0, pinned: new Set(frame.pinnedAUs) });
       // Low arousal adds a partial relaxed lid shape, independently of AU45 blinks.
       const relaxed=[...this.originalInfluences].find(name=>canonicalMorphName(name)==='Fcl_EYE_Sorrow');
       if(relaxed&&frame.source==='emotion')weights[relaxed]=clamp(frame.details.eyelidRelaxation*(1-frame.aus.au45Blink));
@@ -182,5 +183,6 @@ export class FaceViewer {
     this.controls.update(); this.renderer.render(this.scene, this.camera);
   }
   getWeights() { return { ...this.lastWeights }; }
+  getRigState() { return this.rig?.state() ?? null; }
   screenshot() { return this.renderer.domElement.toDataURL('image/png'); }
 }

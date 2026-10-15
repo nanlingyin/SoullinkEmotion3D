@@ -2,17 +2,25 @@
 
 在浏览器中把 VAD 情绪、FACS 动作单元和标准表情参数映射到 VRM 角色，实现连续、可调的 3D 面部表情。
 
-**TypeScript · Three.js · three-vrm · Vite** · 无需训练、LLM 或服务端 API；需要支持 WebGL 的浏览器。
+**TypeScript · Three.js · three-vrm · Vite** · 本地手动控制无需训练或 AI 服务；可选 OpenRouter JEV 文本语义驱动。需要支持 WebGL 的浏览器。
 
-[演示](#演示) · [快速开始](#快速开始) · [功能](#功能) · [VRM 模型要求](#vrm-模型要求) · [模型与授权](#公模与授权)
+**v0.5.1 表现修复**：主要眉眼嘴代理开放完整范围，减少高增益下的形变抵消，改善短时响应；新增明显展示预设、实际设置回读与浏览器参数保留。[表现与动作控制](docs/motion-control.md)。
+
+**v0.5 角度控制**：新增九宫格转头、眼睛八向、头眼独立角度输入，校正 VRM 0.x 方向和眼球角度映射。[方向与角度控制](docs/direction-control.md)。
+
+**v0.4 连续动作**：动作幅度与节奏随情绪变化，也可精确设置幅度、时长、速度和次数；AU、头部动作与视线连续衔接。[动作控制与接口](docs/motion-control.md)。
+
+**v0.3 文本语义**：新增角色回应／按文本表演、连续 VAD 与影响强度、否定和引用处理、短动作及视线。[配置与接口说明](docs/semantic-jev.md)。
+
+[演示](#演示) · [快速开始](#快速开始) · [功能](#功能) · [VRM 模型要求](#vrm-模型要求) · [文本语义](#文本语义) · [模型与授权](#公模与授权)
 
 ![24 种情绪状态展示](docs/media/emotion-gallery.png)
 
 ## 演示
 
-<video src="https://raw.githubusercontent.com/nanlingyin/SoullinkEmotion3D/main/docs/media/QQ20261014-171445-HD.mp4" controls preload="metadata" width="100%"></video>
+[在哔哩哔哩观看最新演示视频](https://www.bilibili.com/video/BV1tqJy6sExV/)
 
-[无法播放时，打开演示视频](docs/media/QQ20261014-171445-HD.mp4)
+仓库内也保留了一个可下载的演示版本：[MP4 视频](docs/media/QQ20261014-171445-HD.mp4)。
 
 ## 快速开始
 
@@ -33,11 +41,23 @@ npm run preview
 
 构建输出位于 `dist/`，可部署到静态服务器。请通过 HTTP 服务访问，不要用 `file://` 打开 HTML。
 
+## 文本语义（可选）
+
+本地手动控制不需要 API Key。需要“角色回应 / 按文本表演”时，复制 `.env.example` 为 `.env.local`，填入本机服务使用的 `OPENROUTER_API_KEY`，然后重启开发服务：
+
+```sh
+Copy-Item .env.example .env.local   # Windows PowerShell
+# cp .env.example .env.local        # macOS / Linux
+npm run dev
+```
+
+Key 只由 Vite 本机服务端读取，不会打包进浏览器，也不要使用 `VITE_OPENROUTER_API_KEY`。纯静态部署仍支持情绪、AU、动作和方向控制，但不会包含 JEV 语义后端。详细配置见 [文本语义说明](docs/semantic-jev.md)。
+
 ## VRM 模型要求
 
 **需要 VRM 角色模型才能显示和驱动面部。**可以使用内置公模，也可以在应用中导入自己的 `.vrm` 文件（支持 VRM 0.x 和 1.0）。普通图片、FBX 或 PMX 模型不能直接导入。
 
-完整压缩包包含四款模型。轻量源码包默认包含 AvatarSample_B，其余三个模型会在运行开发、测试或构建命令前由 `scripts/fetch-models.mjs` 下载并校验 SHA-256。GitHub 无法访问时，请使用含全部公模的完整压缩包。
+本仓库已包含四款公模，开发、测试和构建启动前仍会由 `scripts/fetch-models.mjs` 校验文件；缺少模型的轻量源码包会尝试下载并校验 SHA-256。GitHub 无法访问时，请使用含全部公模的完整压缩包。
 
 ## 功能
 
@@ -47,6 +67,9 @@ npm run preview
 - 连续 AU 映射、支配度规则、事件风格残留、眉眼嘴独立增益与平滑速率。
 - ICT-FaceKit 官方 AU 对照基准；标准 FACS、ARKit 52 与 MediaPipe 结果适配。
 - AU 锁定与释放、自然眨眼、低唤醒眼睑松弛、视线、头部姿态、点头、摇头、VRM 导入、实时曲线、JSON 导出与透明 PNG 截图。
+- 文本语义驱动：可选接入 OpenRouter JEV，解析角色回应、表演模式、VAD、情绪强度、否定/引用、点头/摇头/眨眼、头部方向、眼睛方向及连续动作参数。
+- 精确动作控制：支持幅度、时长、速度、重复次数、表情过渡和临时视线保持；动作会随当前情绪联动，也可切换为手动精确模式。
+- 头部与视线控制：支持头部九宫格、眼睛八向、独立角度输入、侧倾和交回情绪目标；实际角度与模型骨骼能力可回读。
 - 修复旧 VRM 的 targetNames 兼容：在加载内存中将 primitive extras 的名称交给 GLTFLoader，不修改原始 VRM。
 
 ## FACS 接入选择
@@ -173,7 +196,16 @@ MediaPipe 适配读取 faceBlendshapes[0].categories。本版提供结果适配�
 | src/model-utils.ts | 旧 VRM 名称兼容 |
 | src/viewer.ts | VRM、骨骼、直接/代理形变与释放 |
 | scripts/fetch-models.mjs | 缺失模型下载与校验 |
+| server/jev.ts | JEV 请求、结构化结果校验与 VAD/动作转换 |
+| src/motion.ts / src/directions.ts | 连续动作、头部和视线目标 |
 
-验证包括类型检查、生产构建、衰减、帧率一致性、VAD 连续性、D 的独立影响、所有情绪、参数协议、单侧权重、覆盖释放与文件校验。真实 Three.js/VRM 测试加载四款模型，并检查每个支持目标的非零几何形变。
+验证包括类型检查、生产构建、衰减、帧率一致性、VAD 连续性、D 的独立影响、所有情绪、参数协议、单侧权重、覆盖释放、动作/方向连续性、语义结果校验与文件校验。真实 Three.js/VRM 测试加载四款模型，并检查每个支持目标的非零几何形变。
+
+```sh
+npm test
+npm run build
+```
+
+配置 `.env.local` 后，还可以运行 `npm run test:semantic:live`、`npm run test:motion:live` 和 `npm run test:directions:live`，对 JEV 发起真实请求；这些命令可能产生 API 费用，是功能验收，不是情绪识别准确率或心理测量结果。
 
 Node 的 VRM 测试替代纹理解码，仅检查结构、几何和骨骼生命周期。当前环境未提供受支持的浏览器 QA，未宣称完成像素/视觉验收；首次打开目标设备后应检查显示与幅度。

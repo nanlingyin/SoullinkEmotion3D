@@ -5,5 +5,5 @@
     "skipLibCheck": true, "noEmit": true, "allowImportingTsExtensions": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "tests", "vendor", "vite.config.ts"]
+  "include": ["src", "server", "scripts/test-semantic-live.ts", "scripts/test-motion-live.ts", "scripts/test-directions-live.ts", "tests", "vendor", "vite.config.ts"]
 }
