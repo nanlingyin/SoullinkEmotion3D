@@ -1,14 +1,30 @@
 import './style.css';
-import { FaceEngine, clamp, actionUnitDefinitions, type FACSActionUnitKey, type FrameState, type VADVector, type LabSettings } from './engine';
+import { FaceEngine, defaultSettings, clamp, actionUnitDefinitions, type FACSActionUnitKey, type FrameState, type VADVector, type LabSettings } from './engine';
 import { FaceViewer, type ModelInfo } from './viewer';
 import { vroidProfile, parseProfile, type ResolvedBinding } from './profile';
 import { emotionCatalog, emotionByName, commonEmotions } from './emotions';
 import { modelCatalog, type CatalogModel } from './models';
 import { EmotionSpace, planeAxes, planePosition, editPlane, type Plane } from './space';
 import { parseSignal, arkitKeys, facsToARKit } from './arkit';
+import { mountSemanticUI } from './semantic-ui';
+import type { SemanticMode } from './semantic-types';
+import { mountMotionUI } from './motion-ui';
+import type { ActionName, ActionOptions, GazeOptions } from './motion';
+import { mountDirectionUI } from './direction-ui';
+import type { Direction, HeadAngles, EyeAngles } from './directions';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-const engine = new FaceEngine();
+const settingsKey = 'soullinkFace.settings.v1';
+function loadSettings(): Partial<LabSettings> {
+  try {
+    const value = JSON.parse(localStorage.getItem(settingsKey) ?? '{}');
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return Object.fromEntries(Object.entries(defaultSettings).filter(([key, sample]) => typeof value[key] === typeof sample && (typeof sample !== 'number' || Number.isFinite(value[key]))).map(([key]) => [key, value[key]])) as Partial<LabSettings>;
+  } catch { return {}; }
+}
+const engine = new FaceEngine(loadSettings());
+function saveSettings() { try { localStorage.setItem(settingsKey, JSON.stringify(engine.settings)); } catch { /* Manual controls also work when browser storage is unavailable. */ } }
+function configureSettings(settings: Partial<LabSettings>) { engine.configure(settings); saveSettings(); if (paused) { paused = false; updatePause(); } renderUI(engine.snapshot()); }
 let viewer: FaceViewer | null = null;
 let paused = false;
 let frame = engine.snapshot();
@@ -22,15 +38,44 @@ let selectedModel:CatalogModel|undefined=modelCatalog[0];
 let coordinateMode:'3d'|Plane='3d';
 const auInputs = new Map<FACSActionUnitKey, HTMLInputElement>();
 const auOutputs = new Map<FACSActionUnitKey, HTMLElement>();
+const settingBindings = new Map<string, { key: keyof LabSettings; format: (n: number) => string }>();
 const gains: Partial<Record<FACSActionUnitKey, number>> = {};
 const presets=emotionCatalog.filter(p=>p.name!=='neutral');
 let selectedEmotion='';
 const signed = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`;
+const semantic = mountSemanticUI($('semantic-root'), engine, result => {
+  if (result.kind === 'emotion' || result.kind === 'emotion_action') {
+    selectedEmotion = result.emotion;
+    document.querySelectorAll<HTMLButtonElement>('.preset').forEach(b => b.classList.toggle('active', b.dataset.emotion === selectedEmotion));
+    $('emotion-description').textContent = `文本驱动 · ${emotionByName.get(result.emotion)?.label ?? result.emotion} · 影响强度 ${Math.round(result.intensity * 100)}%`;
+  }
+  if (paused) { paused = false; updatePause(); }
+  renderUI(engine.snapshot());
+});
+const motionControls = mountMotionUI($('motion-controls'), engine, () => {
+  semantic.cancelPending();
+  if (paused) { paused = false; updatePause(); }
+  queueMicrotask(saveSettings);
+});
+const directionControls = mountDirectionUI($('direction-controls'), engine, () => {
+  semantic.cancelPending(); if (paused) { paused = false; updatePause(); }
+});
+document.addEventListener('input', event => {
+  const target = event.target;
+  if (target instanceof HTMLInputElement && /^(vad-|pose-|au-)/.test(target.id)) semantic.cancelPending();
+}, true);
+document.addEventListener('change', event => {
+  if (event.target instanceof HTMLInputElement && ['model-file','profile-file','signals-file'].includes(event.target.id)) semantic.cancelPending();
+}, true);
+document.addEventListener('click', event => {
+  const target = event.target;
+  if (target instanceof Element && target.closest('.preset, #center-vad, #clear-aus, #release-signals, #pause, [data-action]')) semantic.cancelPending();
+}, true);
 function toast(message: string) { $('toast').textContent = message; $('toast').classList.add('show'); window.clearTimeout(toastTimer); toastTimer = window.setTimeout(() => $('toast').classList.remove('show'), 4200); }
 function downloadJSON(name: string, data: unknown) { const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:'application/json'})); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 function selectTab(tab: string) {
   document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(b => { const active = b.dataset.tab === tab; b.classList.toggle('active', active); b.setAttribute('aria-selected', String(active)); b.tabIndex = active ? 0 : -1; });
-  for (const name of ['emotion','facs','model']) $( `pane-${name}`).hidden = name !== tab;
+  for (const name of ['emotion','facs','direction','model']) $( `pane-${name}`).hidden = name !== tab;
 }
 document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b, index, buttons) => {
   b.onclick = () => selectTab(b.dataset.tab!);
@@ -61,21 +106,23 @@ for (const axis of axes) {
 }
 const field=$('vad-field'); const space=new EmotionSpace($<HTMLCanvasElement>('vad-space'));let fieldDragging=false;
 function clearEmotionIntent(){selectedEmotion='';document.querySelectorAll('.preset').forEach(p=>p.classList.remove('active'));$('emotion-description').textContent='连续坐标会平滑混合相邻情绪，不依赖单一标签切换。';}
-function fieldMove(event: PointerEvent) {if(coordinateMode==='3d')return;const rect=field.getBoundingClientRect();engine.setVAD(editPlane(engine.snapshot().vad.target,coordinateMode,(event.clientX-rect.left)/rect.width,(event.clientY-rect.top)/rect.height));clearEmotionIntent();renderUI(engine.snapshot());}
+function fieldMove(event: PointerEvent) {if(coordinateMode==='3d')return;semantic.cancelPending();const rect=field.getBoundingClientRect();engine.setVAD(editPlane(engine.snapshot().vad.target,coordinateMode,(event.clientX-rect.left)/rect.width,(event.clientY-rect.top)/rect.height));clearEmotionIntent();renderUI(engine.snapshot());}
 field.onpointerdown=e=>{fieldDragging=true;field.setPointerCapture(e.pointerId);fieldMove(e);};
 field.onpointermove=e=>{if(fieldDragging)fieldMove(e);};
 field.onpointerup=()=>{fieldDragging=false;};field.onpointercancel=()=>{fieldDragging=false;};
-field.onkeydown=e=>{if(coordinateMode==='3d'||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const current=engine.snapshot().vad.target,axes=planeAxes[coordinateMode];engine.setVAD({[axes.x]:current[axes.x]+(e.key==='ArrowRight'?.05:e.key==='ArrowLeft'?-.05:0),[axes.y]:current[axes.y]+(e.key==='ArrowUp'?.05:e.key==='ArrowDown'?-.05:0)});clearEmotionIntent();renderUI(engine.snapshot());};
+field.onkeydown=e=>{if(coordinateMode==='3d'||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))return;semantic.cancelPending();e.preventDefault();const current=engine.snapshot().vad.target,axes=planeAxes[coordinateMode];engine.setVAD({[axes.x]:current[axes.x]+(e.key==='ArrowRight'?.05:e.key==='ArrowLeft'?-.05:0),[axes.y]:current[axes.y]+(e.key==='ArrowUp'?.05:e.key==='ArrowDown'?-.05:0)});clearEmotionIntent();renderUI(engine.snapshot());};
 function switchCoordinates(mode:'3d'|Plane){coordinateMode=mode;$('vad-space').hidden=mode!=='3d';field.hidden=mode==='3d';document.querySelectorAll<HTMLButtonElement>('[data-coordinates]').forEach(b=>{b.classList.toggle('active',b.dataset.coordinates===mode);b.setAttribute('aria-pressed',String(b.dataset.coordinates===mode));});if(mode!=='3d'){const axes=planeAxes[mode];field.querySelector('.field-label.top')!.textContent=axes.top;field.querySelector('.field-label.bottom')!.textContent=axes.bottom;field.querySelector('.field-label.left')!.textContent=axes.left;field.querySelector('.field-label.right')!.textContent=axes.right;field.querySelectorAll('.quadrant').forEach((q,i)=>q.textContent=axes.quadrants[i]);field.setAttribute('aria-label',`${axes.xLabel} 与 ${axes.yLabel} 情绪投影，拖动或方向键编辑`);}$('coordinate-note').textContent=mode==='3d'?'三轴同时可见；拖动旋转，用下方滑块精确编辑。':`${planeAxes[mode].xLabel}–${planeAxes[mode].yLabel} 投影；未显示的第三轴保持当前值。`;renderUI(engine.snapshot());}
 document.querySelectorAll<HTMLButtonElement>('[data-coordinates]').forEach(b=>b.onclick=()=>switchCoordinates(b.dataset.coordinates as '3d'|Plane));
 switchCoordinates('3d');
 $('center-vad').onclick=()=>{engine.setVAD({valence:0,arousal:0,dominance:0});clearEmotionIntent();renderUI(engine.snapshot());};
-function settingSlider(id: string, key: keyof LabSettings, format:(n:number)=>string) {const input=$<HTMLInputElement>(id);input.oninput=()=>{const value=Number(input.value);engine.configure({[key]:value});$( `${id}-value`).textContent=format(value);};}
+function settingSlider(id: string, key: keyof LabSettings, format:(n:number)=>string) {const input=$<HTMLInputElement>(id);settingBindings.set(id,{key,format});input.oninput=()=>configureSettings({[key]:Number(input.value)});}
 settingSlider('hold','hold',n=>`${n.toFixed(0)} s`);settingSlider('half-life','halfLife',n=>`${n.toFixed(0)} s`);settingSlider('gain','gain',n=>`${n.toFixed(1)}×`);
 settingSlider('detail-mix','detailMix',n=>`${Math.round(n*100)}%`);
 settingSlider('brow-gain','browGain',n=>`${n.toFixed(1)}×`);settingSlider('eye-gain','eyeGain',n=>`${n.toFixed(1)}×`);settingSlider('mouth-gain','mouthGain',n=>`${n.toFixed(1)}×`);
-for(const [id,key] of [['auto-decay','autoDecay'],['auto-blink','autoBlink'],['idle','idle']] as const) $<HTMLInputElement>(id).onchange=e=>engine.configure({[key]:(e.target as HTMLInputElement).checked});
-$<HTMLSelectElement>('time-speed').onchange=e=>engine.configure({speed:Number((e.target as HTMLSelectElement).value)});
+for(const [id,key] of [['auto-decay','autoDecay'],['auto-blink','autoBlink'],['idle','idle']] as const) $<HTMLInputElement>(id).onchange=e=>configureSettings({[key]:(e.target as HTMLInputElement).checked});
+$<HTMLSelectElement>('time-speed').onchange=e=>configureSettings({speed:Number((e.target as HTMLSelectElement).value)});
+$('expression-natural').onclick=()=>configureSettings({gain:1.4,detailMix:.65,browGain:1,eyeGain:1,mouthGain:1,faceSmoothing:.28});
+$('expression-bold').onclick=()=>configureSettings({gain:4,detailMix:1,browGain:2,eyeGain:2,mouthGain:2,faceSmoothing:.28});
 
 function renderAUControls(bindings: ResolvedBinding[]) {
   const root=$('au-controls');root.replaceChildren();auInputs.clear();auOutputs.clear();
@@ -95,9 +142,7 @@ function renderAUControls(bindings: ResolvedBinding[]) {
 // Controls exist before the model loads; unsupported channels become disabled after capability discovery.
 renderAUControls(vroidProfile.bindings.map(b=>({...b,supported:false,resolved:[]})));
 $('clear-aus').onclick=()=>{engine.clearAU();toast('已释放全部动作单元');renderUI(engine.snapshot());};
-let gaze={x:0,y:0},pose={x:0,y:0,z:0};
-for(const p of [{key:'gx',label:'视线 · 左右',type:'gaze',axis:'x'},{key:'gy',label:'视线 · 上下',type:'gaze',axis:'y'},{key:'px',label:'头部 · 俯仰',type:'pose',axis:'x'},{key:'py',label:'头部 · 转向',type:'pose',axis:'y'},{key:'pz',label:'头部 · 侧倾',type:'pose',axis:'z'}] as const){const row=document.createElement('div');row.className='control-row';row.innerHTML=`<label for="pose-${p.key}">${p.label}</label><output id="pose-${p.key}-value">+0.00</output><input id="pose-${p.key}" type="range" min="-1" max="1" step="0.01" value="0" />`;row.querySelector('input')!.oninput=e=>{const value=Number((e.target as HTMLInputElement).value);if(p.type==='gaze'){gaze[p.axis as 'x'|'y']=value;engine.setGaze(gaze.x,gaze.y);}else{pose[p.axis]=value;engine.setPose(pose.x,pose.y,pose.z);}$( `pose-${p.key}-value`).textContent=signed(value);};$('pose-controls').append(row);}
-document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b=>b.onclick=()=>engine.playAction(b.dataset.action as 'nod'|'shake'|'blink'));
+document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b=>b.onclick=()=>{ if(paused){paused=false;updatePause();} engine.playAction(b.dataset.action as ActionName); });
 
 function renderMappings(bindings: ResolvedBinding[]) {
   $('mapping-list').replaceChildren();
@@ -106,6 +151,7 @@ function renderMappings(bindings: ResolvedBinding[]) {
   renderAUControls(bindings);
 }
 async function loadModel(url: string, localName?: string) {
+  semantic.cancelPending();
   if(!viewer)return;const requestId=++loadId;
   const loading=$('loading');loading.hidden=false;loading.classList.remove('error');loading.querySelector('strong')!.textContent='正在准备角色';$('reload-model').hidden=true;$('loading-text').textContent='加载模型与纹理…';
   try {const info=await viewer.load(url,p=>{if(requestId===loadId)$('loading-text').textContent=`加载模型 ${Math.round(p*100)}%`;});if(!info||requestId!==loadId)return;modelInfo=info;engine.clearAU();
@@ -113,7 +159,7 @@ async function loadModel(url: string, localName?: string) {
     const metadata=info.meta as {metaVersion?:string};document.querySelector('.stage-label .pill')!.textContent=metadata?.metaVersion==='0'?'VRM 0.x':'VRM 1.0';
     $('model-info-text').textContent=`${info.morphs} 个形变目标 · ${info.triangles.toLocaleString()} 个三角面${info.fallback?' · 标准表情降级模式':''}`;
     $('direct-coverage').textContent=`${info.directChannels} / 52 直接通道`;
-    renderMappings(info.bindings);$('model-license').textContent=selectedModel?`${selectedModel.name} · ${selectedModel.license}`:'自定义 VRM · 查看导出元数据';$<HTMLAnchorElement>('model-terms').href=selectedModel?.terms??'https://vrm.dev/licenses/1.0/';document.querySelector('.stage-caption span:last-child')!.textContent=selectedModel?.id==='Sendagaya_Shino'?'VRoid Project · CC0':'pixiv / VRoid Project';loading.hidden=true;toast(info.fallback?'已加载。该模型使用标准表情降级模式。':'模型就绪，试着触发一个情绪。');
+    renderMappings(info.bindings);directionControls.setCapabilities(info.rig);$('model-license').textContent=selectedModel?`${selectedModel.name} · ${selectedModel.license}`:'自定义 VRM · 查看导出元数据';$<HTMLAnchorElement>('model-terms').href=selectedModel?.terms??'https://vrm.dev/licenses/1.0/';document.querySelector('.stage-caption span:last-child')!.textContent=selectedModel?.id==='Sendagaya_Shino'?'VRoid Project · CC0':'pixiv / VRoid Project';loading.hidden=true;toast(info.fallback?'已加载。该模型使用标准表情降级模式。':'模型就绪，试着触发一个情绪。');
   } catch(error) {if(requestId!==loadId)return;loading.classList.add('error');loading.querySelector('strong')!.textContent='模型加载失败';$('loading-text').textContent=error instanceof Error?error.message:'无法解析模型';$('reload-model').hidden=false;toast('模型加载失败，可重试或导入其他 VRM。');}
 }
 function loadBuiltin(model:CatalogModel){selectedModel=model;for(const key of Object.keys(gains))delete gains[key as FACSActionUnitKey];viewer?.setGains(gains);viewer?.setProfile(vroidProfile);document.querySelectorAll('[data-model]').forEach(b=>b.classList.toggle('active',(b as HTMLElement).dataset.model===model.id));return loadModel(model.path,model.name);}
@@ -137,12 +183,21 @@ $('export-signals').onclick=()=>downloadJSON('soullink-arkit52.json',{protocol:'
 $('import-signals').onclick=()=>$<HTMLInputElement>('signals-file').click();
 $<HTMLInputElement>('signals-file').onchange=async e=>{const input=e.target as HTMLInputElement;const file=input.files?.[0];if(!file)return;try{if(file.size>1024*1024)throw new Error('信号文件应小于 1 MB');engine.clearAU();engine.setBlendshapes(parseSignal(JSON.parse(await file.text())));renderUI(engine.snapshot());toast('外部表情输入已接管；点击情绪或释放输入可恢复');}catch(error){toast(error instanceof Error?error.message:'信号格式无效');}finally{input.value='';}};
 $('release-signals').onclick=()=>{engine.setBlendshapes(null);toast('已释放外部表情输入');};
-$('reset-all').onclick=()=>{engine.reset();frame=engine.snapshot();history=[];lastTraceAt=0;gaze={x:0,y:0};pose={x:0,y:0,z:0};$('pose-controls').querySelectorAll<HTMLInputElement>('input').forEach(i=>i.value='0');$('pose-controls').querySelectorAll('output').forEach(o=>o.textContent='+0.00');clearEmotionIntent();renderUI(frame);toast('情绪、AU 与姿态已归零');};
+$('reset-all').onclick=()=>{semantic.clearHistory();engine.reset();frame=engine.snapshot();history=[];lastTraceAt=0;clearEmotionIntent();renderUI(frame);toast('情绪、AU、姿态与语义上下文已归零');};
 function updatePause(){$('pause').textContent=paused?'▶':'Ⅱ';$('pause').setAttribute('aria-label',paused?'恢复情绪时间':'暂停情绪时间');$('pause').setAttribute('aria-pressed',String(paused));}
 $('pause').onclick=()=>{paused=!paused;updatePause();};
 const guide=$<HTMLDialogElement>('guide');$('guide-button').onclick=()=>guide.showModal();$('close-guide').onclick=()=>guide.close();guide.onclick=e=>{if(e.target===guide){const r=guide.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)guide.close();}};
 
 function renderUI(state: FrameState) {
+  motionControls.render(state);
+  directionControls.render(state);
+  for (const [id, binding] of settingBindings) { const input=$<HTMLInputElement>(id), value=Number(engine.settings[binding.key]); if(document.activeElement!==input)input.value=String(value); $(`${id}-value`).textContent=binding.format(value); }
+  for (const [id,key] of [['auto-decay','autoDecay'],['auto-blink','autoBlink'],['idle','idle']] as const) $<HTMLInputElement>(id).checked=engine.settings[key];
+  $('expression-bold').setAttribute('aria-pressed', String(engine.settings.gain===4&&engine.settings.detailMix===1&&engine.settings.browGain===2&&engine.settings.eyeGain===2&&engine.settings.mouthGain===2));
+  $('expression-natural').setAttribute('aria-pressed', String(engine.settings.gain===1.4&&engine.settings.detailMix===.65&&engine.settings.browGain===1&&engine.settings.eyeGain===1&&engine.settings.mouthGain===1));
+  const lockedFaceAUs = state.pinnedAUs.filter(key => key.startsWith('au')).length;
+  $('expression-lock-note').hidden = !lockedFaceAUs && state.source !== 'arkit52';
+  $('expression-lock-note').textContent = state.source === 'arkit52' ? '外部表情输入正在接管；释放输入后可恢复情绪表情。' : `${lockedFaceAUs} 个 AU 正被手动锁定，会覆盖对应的情绪表情；可在 FACS / AU 中释放。`;
   const {vad}=state;const name=vad.dominantEmotion;$('emotion-label').textContent=emotionByName.get(name)?.label??'平静中性';$('emotion-icon').textContent=emotionByName.get(name)?.icon??'◌';
   $('intensity-value').textContent=`${Math.round(vad.intensity*100)}%`;$('intensity-bar').style.width=`${vad.intensity*100}%`;
   const remaining=vad.holdSeconds??0;const phase=state.source==='arkit52'?'ARKit 输入接管':paused?'时间已暂停':!engine.settings.autoDecay?'目标已锁定':remaining>0?`保持 ${remaining.toFixed(1)}s`:vad.intensity>.015?'自然回落':'平静基线';$('phase-label').textContent=phase;
@@ -172,5 +227,32 @@ function tick(now:number){const delta=Math.min((now-prev)/1000,0.1);prev=now;fra
 document.addEventListener('visibilitychange',()=>{prev=performance.now();});requestAnimationFrame(tick);renderUI(frame);
 
 /** For LLM planners and app integrations: direct local parameter API, no credentials needed. */
-const api={triggerEmotion:(emotion:string,intensity=1)=>engine.triggerEmotion(emotion,intensity),setVAD:(vad:Partial<VADVector>)=>engine.setVAD(vad),setAU:(key:FACSActionUnitKey,value:number|null)=>engine.setAU(key,value),setGaze:(x:number,y:number)=>engine.setGaze(x,y),playAction:(name:'nod'|'shake'|'blink')=>engine.playAction(name),configure:(settings:Partial<LabSettings>)=>engine.configure(settings),getState:()=>engine.snapshot(),getMorphWeights:()=>viewer?.getWeights(),setBlendshapes:(weights:Record<string,unknown>|null)=>engine.setBlendshapes(weights),setFACS:(aus:Record<string,unknown>)=>engine.setBlendshapes(facsToARKit(aus)),setMediaPipeResult:(result:unknown)=>engine.setBlendshapes(parseSignal(result)),getBlendshapes:()=>({...engine.snapshot().blendshapes}),getModels:()=>modelCatalog.map(m=>({id:m.id,name:m.name,morphs:m.morphs})),loadModel:(id:string)=>{const model=modelCatalog.find(m=>m.id===id);if(!model)throw new Error('Unknown model');return loadBuiltin(model);},reset:()=>{ $('reset-all').click(); }};
+function override<T>(action: () => T): T { semantic.cancelPending(); return action(); }
+const api={
+  triggerEmotion:(emotion:string,intensity=1)=>override(()=>engine.triggerEmotion(emotion,intensity)),
+  setVAD:(vad:Partial<VADVector>)=>override(()=>engine.setVAD(vad)),
+  setAU:(key:FACSActionUnitKey,value:number|null)=>override(()=>engine.setAU(key,value)),
+  setGaze:(x:number,y:number)=>override(()=>engine.setGaze(x,y)),
+  setPose:(x:number,y:number,z:number)=>override(()=>engine.setPose(x,y,z)),
+  setHeadAngles:(angles:Partial<HeadAngles>)=>override(()=>engine.setHeadAngles(angles)),
+  setGazeDegrees:(angles:Partial<EyeAngles>)=>override(()=>engine.setGazeDegrees(angles)),
+  headDirection:(direction:Direction,degrees=20)=>override(()=>engine.headDirection(direction,degrees)),
+  gazeDirection:(direction:Direction,degrees=15)=>override(()=>engine.gazeDirection(direction,degrees)),
+  releaseHeadControl:()=>override(()=>engine.releaseHeadControl()),
+  releaseGazeControl:()=>override(()=>engine.releaseGazeControl()),
+  getRigState:()=>viewer?.getRigState()??null,
+  glance:(x:number,y:number,seconds?:number,options:GazeOptions={})=>override(()=>engine.glance(x,y,seconds,options)),
+  playAction:(name:ActionName,options:ActionOptions={})=>override(()=>engine.playAction(name,options)),
+  stopActions:()=>override(()=>engine.stopActions()),
+  configure:(settings:Partial<LabSettings>)=>configureSettings(settings),getSettings:()=>({...engine.settings}),getState:()=>engine.snapshot(),getMorphWeights:()=>viewer?.getWeights(),
+  setBlendshapes:(weights:Record<string,unknown>|null)=>override(()=>engine.setBlendshapes(weights)),
+  setFACS:(aus:Record<string,unknown>)=>override(()=>engine.setBlendshapes(facsToARKit(aus))),
+  setMediaPipeResult:(result:unknown)=>override(()=>engine.setBlendshapes(parseSignal(result))),
+  getBlendshapes:()=>({...engine.snapshot().blendshapes}),getModels:()=>modelCatalog.map(m=>({id:m.id,name:m.name,morphs:m.morphs})),
+  loadModel:(id:string)=>{const model=modelCatalog.find(m=>m.id===id);if(!model)throw new Error('Unknown model');return loadBuiltin(model);},
+  reactToText:(text:string,options:{mode?:SemanticMode;persona?:string}={})=>semantic.analyze(text,options),
+  analyzeText:(text:string,options:{mode?:SemanticMode;persona?:string}={})=>semantic.analyze(text,{...options,apply:false}),
+  getSemanticState:()=>structuredClone(semantic.state),clearSemanticHistory:()=>semantic.clearHistory(),cancelSemantic:()=>semantic.cancelPending(),
+  reset:()=>{ $('reset-all').click(); }
+};
 Object.assign(window,{soullinkFace:api});
