@@ -1,0 +1,367 @@
+{
+  "overall": {
+    "participants": 386,
+    "responses": 3860,
+    "state_responses": 1950,
+    "transition_responses": 1910,
+    "recognition": {
+      "numerator": 5249.0,
+      "denominator": 5770,
+      "estimate": 0.9097053726169844
+    },
+    "state_recognition": {
+      "numerator": 1774.0,
+      "denominator": 1950,
+      "estimate": 0.9097435897435897
+    },
+    "transition_start": {
+      "numerator": 1759.0,
+      "denominator": 1910,
+      "estimate": 0.9209424083769634
+    },
+    "transition_end": {
+      "numerator": 1716.0,
+      "denominator": 1910,
+      "estimate": 0.8984293193717278
+    },
+    "transition_joint": {
+      "numerator": 1580.0,
+      "denominator": 1910,
+      "estimate": 0.8272251308900523
+    },
+    "naturalness": {
+      "numerator": 20400.0,
+      "denominator": 3860,
+      "estimate": 5.284974093264249,
+      "sd": 0.9944818594638235,
+      "median": 5.0
+    },
+    "transition_smoothness": {
+      "numerator": 9232.0,
+      "denominator": 1910,
+      "estimate": 4.833507853403141,
+      "sd": 1.010436762085593,
+      "median": 5.0
+    },
+    "change_clarity": {
+      "numerator": 10607.0,
+      "denominator": 1910,
+      "estimate": 5.553403141361256,
+      "sd": 0.8066164576710738,
+      "median": 6.0
+    }
+  },
+  "by_method": {
+    "full": {
+      "participants": 193,
+      "responses": 1930,
+      "state_responses": 966,
+      "transition_responses": 964,
+      "recognition": {
+        "numerator": 2724.0,
+        "denominator": 2894,
+        "estimate": 0.9412577747062889
+      },
+      "state_recognition": {
+        "numerator": 908.0,
+        "denominator": 966,
+        "estimate": 0.9399585921325052
+      },
+      "transition_start": {
+        "numerator": 916.0,
+        "denominator": 964,
+        "estimate": 0.950207468879668
+      },
+      "transition_end": {
+        "numerator": 900.0,
+        "denominator": 964,
+        "estimate": 0.9336099585062241
+      },
+      "transition_joint": {
+        "numerator": 853.0,
+        "denominator": 964,
+        "estimate": 0.8848547717842323
+      },
+      "naturalness": {
+        "numerator": 10341.0,
+        "denominator": 1930,
+        "estimate": 5.358031088082901,
+        "sd": 1.0022267892726047,
+        "median": 5.0
+      },
+      "transition_smoothness": {
+        "numerator": 4763.0,
+        "denominator": 964,
+        "estimate": 4.940871369294606,
+        "sd": 1.0085973460652766,
+        "median": 5.0
+      },
+      "change_clarity": {
+        "numerator": 5444.0,
+        "denominator": 964,
+        "estimate": 5.647302904564316,
+        "sd": 0.8011433856388789,
+        "median": 6.0
+      }
+    },
+    "nnls_ema": {
+      "participants": 193,
+      "responses": 1930,
+      "state_responses": 984,
+      "transition_responses": 946,
+      "recognition": {
+        "numerator": 2525.0,
+        "denominator": 2876,
+        "estimate": 0.8779554937413073
+      },
+      "state_recognition": {
+        "numerator": 866.0,
+        "denominator": 984,
+        "estimate": 0.8800813008130082
+      },
+      "transition_start": {
+        "numerator": 843.0,
+        "denominator": 946,
+        "estimate": 0.8911205073995772
+      },
+      "transition_end": {
+        "numerator": 816.0,
+        "denominator": 946,
+        "estimate": 0.8625792811839323
+      },
+      "transition_joint": {
+        "numerator": 727.0,
+        "denominator": 946,
+        "estimate": 0.7684989429175476
+      },
+      "naturalness": {
+        "numerator": 10059.0,
+        "denominator": 1930,
+        "estimate": 5.211917098445596,
+        "sd": 0.9815102218370592,
+        "median": 5.0
+      },
+      "transition_smoothness": {
+        "numerator": 4469.0,
+        "denominator": 946,
+        "estimate": 4.724101479915434,
+        "sd": 1.0010526133348208,
+        "median": 5.0
+      },
+      "change_clarity": {
+        "numerator": 5163.0,
+        "denominator": 946,
+        "estimate": 5.457716701902749,
+        "sd": 0.8013273829613675,
+        "median": 5.0
+      }
+    }
+  },
+  "model_ids": [
+    "l2d_A",
+    "l2d_B",
+    "l2d_C",
+    "l2d_D",
+    "vrm_A",
+    "vrm_B",
+    "vrm_C",
+    "vrm_D"
+  ],
+  "base_stimuli": 500,
+  "design": {
+    "trials_per_participant": [
+      10
+    ],
+    "cell_participants": [
+      24,
+      25,
+      24,
+      24,
+      24,
+      24,
+      25,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24,
+      24
+    ],
+    "live2d_codes": 4,
+    "vrm_codes": 4
+  },
+  "bootstrap": {
+    "crossed_participant_stimulus": {
+      "recognition": {
+        "ci95_low": 0.03810868378207314,
+        "ci95_high": 0.08878980159177749,
+        "finite_draws": 10000
+      },
+      "state_recognition": {
+        "ci95_low": 0.017762577846314583,
+        "ci95_high": 0.10218625611807737,
+        "finite_draws": 10000
+      },
+      "transition_start": {
+        "ci95_low": 0.0186840416685098,
+        "ci95_high": 0.102216819678013,
+        "finite_draws": 10000
+      },
+      "transition_end": {
+        "ci95_low": 0.02415337223646616,
+        "ci95_high": 0.12001457925328826,
+        "finite_draws": 10000
+      },
+      "transition_joint": {
+        "ci95_low": 0.06136059246762955,
+        "ci95_high": 0.17473503005758054,
+        "finite_draws": 10000
+      },
+      "naturalness": {
+        "ci95_low": -0.0007521184747881991,
+        "ci95_high": 0.2915242898956875,
+        "finite_draws": 10000
+      },
+      "transition_smoothness": {
+        "ci95_low": 0.03095901180852474,
+        "ci95_high": 0.39847338671022353,
+        "finite_draws": 10000
+      },
+      "change_clarity": {
+        "ci95_low": 0.05915785682956409,
+        "ci95_high": 0.31537748071001404,
+        "finite_draws": 10000
+      }
+    },
+    "participant_only": {
+      "recognition": {
+        "ci95_low": 0.048761110366470656,
+        "ci95_high": 0.07793036813087513,
+        "finite_draws": 10000
+      },
+      "state_recognition": {
+        "ci95_low": 0.03478217438506553,
+        "ci95_high": 0.08408104331404628,
+        "finite_draws": 10000
+      },
+      "transition_start": {
+        "ci95_low": 0.03665030809111188,
+        "ci95_high": 0.08182153000061969,
+        "finite_draws": 10000
+      },
+      "transition_end": {
+        "ci95_low": 0.04412721988928252,
+        "ci95_high": 0.09828398920979198,
+        "finite_draws": 10000
+      },
+      "transition_joint": {
+        "ci95_low": 0.0831177747878704,
+        "ci95_high": 0.14968385942279894,
+        "finite_draws": 10000
+      },
+      "naturalness": {
+        "ci95_low": 0.03316062176165866,
+        "ci95_high": 0.26165803108808294,
+        "finite_draws": 10000
+      },
+      "transition_smoothness": {
+        "ci95_low": 0.0826460828639102,
+        "ci95_high": 0.34992589886560777,
+        "finite_draws": 10000
+      },
+      "change_clarity": {
+        "ci95_low": 0.11280171467120781,
+        "ci95_high": 0.26490085993093193,
+        "finite_draws": 10000
+      }
+    },
+    "draws": 10000,
+    "seed": 20261028,
+    "interval": "percentile",
+    "model_scope": "Eight observed model IDs held fixed; people stratified by method/model.",
+    "analysis_status": "Crossed participant--stimulus bootstrap for the block-randomized between-participant design."
+  },
+  "neutral_calm_confusion": {
+    "full": {
+      "neutral": {
+        "total": 428,
+        "swaps": 64,
+        "rate": 0.14953271028037382
+      },
+      "calm": {
+        "total": 391,
+        "swaps": 65,
+        "rate": 0.16624040920716113
+      },
+      "combined": {
+        "total": 819,
+        "swaps": 129,
+        "rate": 0.1575091575091575
+      }
+    },
+    "nnls_ema": {
+      "neutral": {
+        "total": 394,
+        "swaps": 132,
+        "rate": 0.3350253807106599
+      },
+      "calm": {
+        "total": 427,
+        "swaps": 132,
+        "rate": 0.3091334894613583
+      },
+      "combined": {
+        "total": 821,
+        "swaps": 264,
+        "rate": 0.3215590742996346
+      }
+    }
+  },
+  "endpoint_error_counts": {
+    "calm_neutral_confusion": 393,
+    "other_confusion": 122,
+    "uncertain": 6
+  },
+  "study_protocol": {
+    "design": "2 control methods by 8 anonymized avatar conditions; block-randomized between-participant design",
+    "participants": 386,
+    "cells": 16,
+    "participants_per_cell": [
+      24,
+      25
+    ],
+    "fps": 60,
+    "full": {
+      "eta_s": 0.025,
+      "ridge_lambda": 0.002
+    },
+    "nnls_ema": {
+      "tau_s": 0.07,
+      "ridge_lambda": 0.002
+    },
+    "shared_reference_T90_ms": 150,
+    "model_codes": {
+      "live2d": [
+        "l2d_A",
+        "l2d_B",
+        "l2d_C",
+        "l2d_D"
+      ],
+      "vrm": [
+        "vrm_A",
+        "vrm_B",
+        "vrm_C",
+        "vrm_D"
+      ]
+    },
+    "asset_policy": "Anonymized codes preserve licensed closed-source character identities; the set includes publicly available Hiyori Momose and AvatarSample_B examples.",
+    "demographic_policy": "De-identified by design before export.",
+    "digital_informed_consent": "All participants provided digital informed consent before beginning.",
+    "ethical_exemption": "Qualified under institutional provisions for minimal-risk educational and perceptual software evaluation; local ethical guidelines and the ethical principles of the Declaration of Helsinki.",
+    "personally_identifiable_or_biometric_data": "Not collected.",
+    "confirmation_date": "2026-10-28"
+  }
+}
