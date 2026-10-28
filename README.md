@@ -1,3 +1,13 @@
+# Paper data and reproducibility materials
+
+This is the **paper** research branch for *SoulLink: Capability-Aware Continuous Affective Animation for 2D and 3D Avatars*.
+
+**[Open the anonymous study data and reproduction instructions](paper/README.md)** · [Response CSV](paper/data/perceptual_responses.csv) · [Stimulus pool](paper/data/stimulus_pool.csv) · [Reference results](paper/results/analysis.json)
+
+The release contains 3,860 responses from 386 participants. The Python reproduction script checks the released data against the paper's reference statistics using 10,000 crossed participant–stimulus bootstrap draws. The application documentation below describes the pre-existing TypeScript application; the paper's optimization reference is a separate research implementation.
+
+---
+
 # Soullink Emotion 3D
 
 在浏览器中把 VAD 情绪、FACS 动作单元和标准表情参数映射到 VRM 角色，实现连续、可调的 3D 面部表情。
